@@ -1,38 +1,79 @@
-async function uploadPhoto() {
-  const input = document.getElementById('uploadInput');
-  const file = input.files[0];
-  if (!file) return;
+// Имя базы данных
+const DB_NAME = 'galleryDB';
+const DB_VERSION = 1;
+const STORE_NAME = 'photos';
 
-  const storageRef = firebase.storage().ref('photos/' + Date.now() + '_' + file.name);
-  const snapshot = await storageRef.put(file);
-  const downloadURL = await snapshot.ref.getDownloadURL();
+// Открываем IndexedDB
+let db;
+const request = indexedDB.open(DB_NAME, DB_VERSION);
 
-  // Сохраняем ссылку на фото в Firestore
-  await firebase.firestore().collection('photos').add({
-    url: downloadURL,
-    createdAt: firebase.firestore.FieldValue.serverTimestamp()
-  });
+// Создание хранилища при первом запуске
+request.onupgradeneeded = function (event) {
+  db = event.target.result;
+  db.createObjectStore(STORE_NAME, { autoIncrement: true });
+};
 
-  input.value = '';
-  loadPhotos(); // Обновим галерею
-}
+// Успешное подключение к базе
+request.onsuccess = function (event) {
+  db = event.target.result;
+  loadPhotos(); // Загружаем фото при старте
+};
 
+request.onerror = function (event) {
+  console.error('Ошибка при открытии базы данных', event);
+};
+
+// Загрузка всех фото из базы
 function loadPhotos() {
+  const transaction = db.transaction(STORE_NAME, 'readonly');
+  const store = transaction.objectStore(STORE_NAME);
+
+  const request = store.openCursor();
   const gallery = document.getElementById('gallery');
   gallery.innerHTML = '';
 
-  firebase.firestore()
-    .collection('photos')
-    .orderBy('createdAt', 'desc')
-    .get()
-    .then(snapshot => {
-      snapshot.forEach(doc => {
-        const data = doc.data();
-        const img = document.createElement('img');
-        img.src = data.url;
-        gallery.appendChild(img);
-      });
-    });
+  request.onsuccess = function (event) {
+    const cursor = event.target.result;
+    if (cursor) {
+      const img = document.createElement('img');
+      img.src = cursor.value;
+      gallery.prepend(img);
+      cursor.continue();
+    }
+  };
 }
 
-window.onload = loadPhotos;
+// Загрузка нового фото
+function uploadPhoto() {
+  const input = document.getElementById('uploadInput');
+  if (input.files && input.files[0]) {
+    const reader = new FileReader();
+
+    reader.onload = function (e) {
+      const imgData = e.target.result;
+
+      // Добавляем фото в базу
+      const transaction = db.transaction(STORE_NAME, 'readwrite');
+      const store = transaction.objectStore(STORE_NAME);
+      store.add(imgData);
+
+      // Отображаем фото
+      const img = document.createElement('img');
+      img.src = imgData;
+      document.getElementById('gallery').prepend(img);
+    };
+
+    reader.readAsDataURL(input.files[0]);
+  }
+}
+
+// Очистка галереи и базы
+function clearGallery() {
+  if (confirm('Удалить все фотографии?')) {
+    const transaction = db.transaction(STORE_NAME, 'readwrite');
+    const store = transaction.objectStore(STORE_NAME);
+    store.clear().onsuccess = function () {
+      document.getElementById('gallery').innerHTML = '';
+    };
+  }
+}
