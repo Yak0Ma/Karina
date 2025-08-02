@@ -2,23 +2,43 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8">
-  <title>Karina</title>
+  <title>Галерея Карина 💖</title>
   <link rel="stylesheet" href="style.css">
+
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/10.5.2/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.5.2/firebase-storage.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.5.2/firebase-firestore.js"></script>
+
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyA6OO_Wqhtr0OzlnC4oGHocyPOmCyLVxL8",
+      authDomain: "karina-79694.firebaseapp.com",
+      projectId: "karina-79694",
+      storageBucket: "karina-79694.appspot.com",
+      messagingSenderId: "488891447665",
+      appId: "1:488891447665:web:640ddafcf5bff245e5ded0",
+      measurementId: "G-Q1KBT6XQB1"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const storage = firebase.storage();
+    const db = firebase.firestore();
+  </script>
 </head>
 <body>
   <header>
-    <h1>Karina 💖</h1>
+    <h1>Галерея Карина 💖</h1>
   </header>
 
   <main>
     <input type="file" id="uploadInput" accept="image/*">
-    <button onclick="uploadPhoto()">Добавить фото</button>
-    <button onclick="clearGallery()">🗑 Очистить всё</button>
+    <button onclick="uploadPhoto()">📤 Загрузить фото</button>
     <div id="gallery"></div>
   </main>
 
   <footer>
-    <p>&copy; 2025 Karina</p>
+    <p>&copy; 2025 Карина</p>
   </footer>
 
   <script src="script.js"></script>
